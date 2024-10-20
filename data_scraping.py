@@ -49,7 +49,10 @@ import urllib.parse
 
 # Step 1: Load the CSV file
 df = pd.read_csv('games.csv')
-
+# only taking the name column
+df = df['name'] 
+# taking only first row
+df = df.head(1)
 # Initialize lists to store the review summaries and counts
 review_summaries = []
 review_counts = []
