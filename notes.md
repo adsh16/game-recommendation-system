@@ -39,3 +39,21 @@ Steam review system
 3. categories : single player, multipliay , pvp, controller support , etc ...
 4. generes : indie, casual, action , adventure, etcccc
 5. release year : int exampel 2004
+
+good data base
+https://www.kaggle.com/datasets/trolukovich/steam-games-complete-dataset
+
+
+## Making aggregate features
+1. We can use metacritic score that is for 3k games
+2. postive/negative scores ratio
+3. recommendations 15k
+
+estimated owners is alo useful
+
+number of games that have either
+1. metacritic score != 0
+2. reccomendatios != 0
+3. user_score != 0
+4. postive != 0 and negative != 0
+5. average_playtime_forever != 0
