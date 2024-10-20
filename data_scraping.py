@@ -50,7 +50,7 @@ import urllib.parse
 # Step 1: Load the CSV file
 df = pd.read_csv('games.csv')
 # only taking the name column
-df = df['name'] 
+df = df['name']
 # taking only first row
 df = df.head(1)
 # Initialize lists to store the review summaries and counts
@@ -62,7 +62,7 @@ def fetch_reviews(game_name):
     # Step 2: Search for the game on Google
     search_query = urllib.parse.quote_plus(f"{game_name} steam")
     google_search_url = f"https://www.google.com/search?q={search_query}"
-    
+
     # Get the Google search results
     response = requests.get(google_search_url)
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -88,7 +88,7 @@ def fetch_reviews(game_name):
         review_text = review_summary['data-tooltip-html']
         review_summary_text = review_text.split(' are ')[0]  # e.g., "81% of the 57,209 user reviews for this game"
         review_count = review_text.split(' user reviews for this game are ')[1].split('.')[0]
-        
+
         review_counts.append(review_count)
         review_summaries.append(review_summary_text)
     else:
