@@ -32,3 +32,10 @@ Steam review system
 0 - 19 | 50+ reviews | negative | very
 
 0 - 19 | 500+ reviews | negative | overwhelming
+
+## features being taken to do clustering
+1. Platform : windows, linux, mac bool true false
+2. Price : float64
+3. categories : single player, multipliay , pvp, controller support , etc ...
+4. generes : indie, casual, action , adventure, etcccc
+5. release year : int exampel 2004
