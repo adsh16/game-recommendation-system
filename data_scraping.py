@@ -3,6 +3,21 @@ import requests
 from bs4 import BeautifulSoup
 import time
 import urllib.parse
+
+# Step 1: Load the CSV file
+df = pd.read_csv('games.csv')
+# only taking the name column
+df = df['name']
+# taking only first row
+df = df.head(1)
+# Initialize lists to store the review summaries and counts
+review_summaries = []
+review_counts = []
+
+# Function to fetch reviews from Steam
+def fetch_reviews(game_name):
+    # Step 2: Search for the game on Google
+    search_query = urllib.parse.quote_plus(f"{game_name} steam")
 import re
 import os
 import random
