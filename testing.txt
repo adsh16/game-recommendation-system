@@ -1,132 +1,125 @@
-import pandas as pd
-import requests
-from bs4 import BeautifulSoup
-import time
-import urllib.parse
-import re
+from whoosh.index import create_in
+from whoosh.fields import Schema, TEXT
+from whoosh.qparser import MultifieldParser, FuzzyTermPlugin
 import os
-import random
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from tabulate import tabulate
+from colorama import init, Fore, Style
 
-# Function to load user agents from user_agents.txt
-def load_user_agents(file_path):
-    with open(file_path, 'r') as file:
-        user_agents = [line.strip() for line in file if line.strip()]
-    return user_agents
+def create_search_index(game_list):
+    """
+    Create a Whoosh search index for game names.
+    
+    Parameters:
+    - game_list (list): List of game names to index.
+    
+    Returns:
+    - Index object for searching.
+    """
+    schema = Schema(game_name=TEXT(stored=True))
+    if not os.path.exists("indexdir"):
+        os.mkdir("indexdir")
+    ix = create_in("indexdir", schema)
+    
+    writer = ix.writer()
+    for game in game_list:
+        writer.add_document(game_name=game)
+    writer.commit()
+    return ix
 
-def get_random_user_agent(user_agents):
-    """Returns a random user agent string from the list."""
-    return random.choice(user_agents)
+def search_game(game_name, index, limit=10):
+    """
+    Search for the closest game name using Whoosh, with fuzzy matching.
+    
+    Parameters:
+    - game_name (str): The name of the game to search for.
+    - index (Index): The Whoosh index created for game names.
+    - limit (int): The number of closest matches to return.
+    
+    Returns:
+    - List of matching game names.
+    """
+    with index.searcher() as searcher:
+        parser = MultifieldParser(["game_name"], schema=index.schema)
+        parser.add_plugin(FuzzyTermPlugin())  # Enables fuzzy search
+        query = parser.parse(game_name)
+        results = searcher.search(query, limit=limit)
+        return [(r["game_name"], r.score) for r in results]
 
-def get_steam_url(game_name, user_agents):
-    """Search for the game on Google and return its Steam URL using a random user agent."""
-    headers = {
-        'User-Agent': get_random_user_agent(user_agents)
-    }
+def print_search_results(closest_games, query):
+    """Print search results in a beautiful table format"""
+    search_data = [(i, game, f"{score:.3f}") 
+                   for i, (game, score) in enumerate(closest_games, 1)]
     
-    search_query = urllib.parse.quote_plus(f"{game_name} steam store")
-    google_search_url = f"https://www.google.com/search?q={search_query}"
+    print(f"\n{Fore.CYAN}🔍 Search Results for '{query}'{Style.RESET_ALL}")
+    print(tabulate(search_data,
+                  headers=["#", "Game Name", "Match Score"],
+                  tablefmt="rounded_grid",
+                  numalign="center",
+                  stralign="left"))
     
-    try:
-        response = requests.get(google_search_url, headers=headers, timeout=10)
-        soup = BeautifulSoup(response.text, 'html.parser')
+def print_recommendations(recommendations, input_game, final_data):
+    """Print recommendations in a beautiful table format"""
+    # Prepare data for tabulate
+    table_data = []
+    for game, combined_score, feature_score, cosine_score in recommendations:
+        aggregate_score = final_data.loc[game]['aggregate_score'] if game in final_data.index else "N/A"
         
-        for link in soup.find_all('a'):
-            href = str(link.get('href'))
-            if 'store.steampowered.com/app/' in href:
-                try:
-                    steam_url = href.split('&')[0].split('=')[1]
-                    return steam_url
-                except IndexError:
-                    match = re.search(r'store\.steampowered\.com/app/\d+', href)
-                    if match:
-                        return 'https://' + match.group(0)
-                    continue
-        
-        print(f"No Steam store page found for {game_name}")
-        return None
-        
-    except Exception as e:
-        print(f"Error searching for {game_name}: {str(e)}")
-        return None
-
-def fetch_game_data(game_name, user_agents):
-    """Fetch review data and image for a given game from Steam using a random user agent."""
-    headers = {
-        'User-Agent': get_random_user_agent(user_agents)
-    }
-    
-    steam_url = get_steam_url(game_name, user_agents)
-    if not steam_url:
-        return game_name, "Not found", 0, 0, None
-    
-    try:
-        response = requests.get(steam_url, headers=headers, timeout=10)
-        soup = BeautifulSoup(response.text, 'html.parser')
-        
-        review_count_meta = soup.find('meta', {'itemprop': 'reviewCount'})
-        review_count = int(review_count_meta['content']) if review_count_meta else 0
-        
-        review_desc = soup.find('span', class_='responsive_reviewdesc')
-        if review_desc:
-            rating_match = re.search(r'(\d+)%', review_desc.text)
-            review_rating = int(rating_match.group(1)) if rating_match else 0
+        # Add color based on combined score
+        if combined_score >= 0.8:
+            color = Fore.GREEN
+        elif combined_score >= 0.6:
+            color = Fore.YELLOW
         else:
-            review_rating = 0
-        
-        review_summary = soup.find('span', class_='game_review_summary')
-        review_summary = review_summary.text.strip() if review_summary else "No reviews"
-        
-        header_img = soup.find('img', class_='game_header_image_full')
-        image_link = header_img['src'] if header_img else None
-        
-        return game_name, review_summary, review_count, review_rating, image_link
-        
-    except Exception as e:
-        print(f"Error fetching data for {game_name}: {str(e)}")
-        return game_name, "Error", 0, 0, None
-
-def save_to_csv(game_data, output_file, file_exists):
-    game_name, review_summary, review_count, review_rating, image_link = game_data
-    game_data_df = pd.DataFrame({
-        'name': [game_name],
-        'review_summary': [review_summary],
-        'review_count': [review_count],
-        'review_rating': [review_rating],
-        'image_link': [image_link]
-    })
-    game_data_df.to_csv(output_file, mode='a', header=not file_exists, index=False)
-
-def main():
-    try:
-        # Load user agents from file
-        user_agents = load_user_agents('user_agents.txt')
-        
-        # Read the CSV with game names
-        df = pd.read_csv('games.csv')
-        output_file = 'games_with_reviews.csv'
-        file_exists = os.path.isfile(output_file)
-        
-        with ThreadPoolExecutor(max_workers=5) as executor:
-            futures = {executor.submit(fetch_game_data, game_name, user_agents): game_name for game_name in df['name']}
+            color = Fore.RED
             
-            for future in as_completed(futures):
-                game_name = futures[future]
-                try:
-                    game_data = future.result()
-                    save_to_csv(game_data, output_file, file_exists)
-                    file_exists = True
-                    print(f"Finished processing {game_name}")
-                except Exception as e:
-                    print(f"Error processing {game_name}: {str(e)}")
-                
-                # Add a random delay between 1-3 seconds after each request to avoid rate-limiting
-                time.sleep(random.uniform(1, 3))
-        
-        print("Processing complete! Data saved to games_with_reviews.csv")
-        
-    except Exception as e:
-        print(f"An error occurred: {str(e)}")
+        table_data.append([
+            f"{color}{game}{Style.RESET_ALL}",
+            f"{color}{combined_score:.3f}{Style.RESET_ALL}",
+            f"{feature_score:.3f}",
+            f"{cosine_score:.3f}",
+            str(aggregate_score)
+        ])
 
-if __name__ == "__main__":
-    main()
+    # Print recommendations table
+    print(f"\n{Fore.CYAN}🎮 Recommendations for '{input_game}'{Style.RESET_ALL}")
+    print(tabulate(table_data,
+                  headers=["Game Name", "Match Score", "Feature Score", "Cosine Score", "Agg. Score"],
+                  tablefmt="rounded_grid",
+                  numalign="center",
+                  stralign="left"))
+
+# Example usage:
+game_list = processed_df.index.tolist()
+index = create_search_index(game_list)
+
+# ----------------------------------------------------------------
+# ----------------------------------------------------------------
+""" Enter Game Name Here and Run the Code """
+query = "black myth wukong"
+# ----------------------------------------------------------------
+# ----------------------------------------------------------------
+closest_games = search_game(query, index, limit=10)
+
+# Print search results
+print_search_results(closest_games, query)
+
+# Get and print recommendations
+game_name = closest_games[0][0]
+recommendations = get_game_recommendations(game_name, processed_df, final_model)
+
+# Sort recommendations by aggregate score
+recommendations_sorted = sorted(
+    recommendations,
+    key=lambda x: final_data.loc[x[0]]['aggregate_score'] 
+    if x[0] in final_data.index else -1,
+    reverse=True
+)
+
+# Print recommendations
+print_recommendations(recommendations_sorted, game_name, final_data)
+
+# Print legend
+print(f"\n{Fore.CYAN}📋 Legend:{Style.RESET_ALL}")
+print(f"{Fore.GREEN}■{Style.RESET_ALL} High similarity (≥ 0.8)")
+print(f"{Fore.YELLOW}■{Style.RESET_ALL} Medium similarity (≥ 0.6)")
+print(f"{Fore.RED}■{Style.RESET_ALL} Lower similarity (< 0.6)")
