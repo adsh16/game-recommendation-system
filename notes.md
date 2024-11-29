@@ -58,3 +58,8 @@ number of games that have either
 3. user_score != 0
 4. postive != 0 and negative != 0
 5. average_playtime_forever != 0
+
+After Midsem Improvements:
+1. Use K-means++ for clustering
+2. compare K-means++ with K-means
+3. compare K-means++ with eucledian distance, manhattan distance, cosine similarity, mahalnobis distance
