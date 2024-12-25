@@ -1,4 +1,4 @@
-# Game Recommendation System 🎮
+# PlaySense - A Game Recommendation System 🎮
 
 A sophisticated game recommendation system that combines K-Means clustering and Nearest Neighbors to provide personalized game recommendations. The system addresses the challenge of decision paralysis faced by players when navigating vast game libraries by offering tailored suggestions based on game attributes and user preferences.
 
