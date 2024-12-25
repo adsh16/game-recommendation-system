@@ -311,34 +311,33 @@ recommendations = recommender.get_recommendations("FIFA")
 ```
 
 ## 👥 Team Members
-
-### Aditya Sharma (2022038)
+### Aditya Sharma [@adsh16](https://github.com/adsh16) 
 - Data preprocessing
 - Feature engineering
 - Clustering analysis
 - Model development
 - EDA, SVD, fuzzy search
 
-### Kanishk Kumar Meena (2022233)
+### Kanishk Kumar Meena  [@KanishkKumarMeena](https://github.com/KanishkKumarMeena)
 - Data cleaning
 - Collaborative Filtering
 - Model evaluation
 
-### Vansh Aggarwal (2022558)
+### Vansh Aggarwal [@VanshAg283](https://github.com/VanshAg283)
 - Dataset management
 - Visualization
 - EDA
 - Performance Testing
 
 ## 🔮 Future Work
+1. More robust and real-life based model performance testing. Using avaiable databases of `similar` or `co-bought` games to match with model's reccomendations.
+2. Integration of user interaction data for hybrid recommendations
+3. Enhancement of clustering algorithms for better game categorization
+4. Implementation of real-time recommendation updates
+5. Addition of more sophisticated feature engineering techniques
+6. Development of a user interface for easier interaction
 
-1. Integration of user interaction data for hybrid recommendations
-2. Enhancement of clustering algorithms for better game categorization
-3. Implementation of real-time recommendation updates
-4. Addition of more sophisticated feature engineering techniques
-5. Development of a user interface for easier interaction
-
-![Future Roadmap](assets/images/future_roadmap.png)
+<!-- ![Future Roadmap](assets/images/future_roadmap.png) -->
 <!-- Add visualization of future development roadmap -->
 
 ## 📊 Sample Run
