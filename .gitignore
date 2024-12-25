@@ -1,2 +1,6 @@
-*.csv
-*txt
+# Ignore folders named txt, data, and indexdir
+txt/
+assests/data/
+indexdir/
+.venv/
+
